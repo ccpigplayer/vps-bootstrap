@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.4
+- docs: public repo update + improved one-line bootstrap command
+
+
 ## v1.1.3
 - fix: handle missing sudo package gracefully and admin group compatibility
 
