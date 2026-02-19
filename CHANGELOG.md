@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.8
+- feat: support interactive hostname update
+
+
 ## v1.1.7
 - fix: installer now supports curl/wget fallback
 
