@@ -57,7 +57,7 @@
 ## 快速开始
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash
+bash -lc 'command -v curl >/dev/null && curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash || wget -qO- https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash'
 ```
 
 ---
