@@ -15,7 +15,8 @@
 把一台新 VPS 从“裸机状态”快速拉到“可安全登录 + 可审计 + 可重复部署”。
 
 ### 🛡️ 安全基线
-- **SSH 两阶段防锁死**：先改端口/禁 root，再验证成功后切仅秘钥
+- **SSH 两阶段防锁死**：第一阶段保留密码兜底，确认新连接可用后再切仅秘钥并禁用 root 密码登录
+- **公钥格式校验 + 指纹确认**：输入公钥后会先验证并展示指纹，再由你确认后写入
 - **Fail2ban 严格策略**：`3 次失败 / 10 分钟` → `封禁 24 小时`
 - **端口自动对齐**：Fail2ban 自动跟随 SSH 新端口
 
@@ -29,6 +30,7 @@
 - **多时区快速选择**：上海/香港/新加坡/首尔/洛杉矶/东京
 - **可选主机名修改**：一键改 `hostname`，便于多机统一命名规范
 - **智能验证流程**：自动探测监听状态 + TCP 探测 + 等待重试
+- **SSH 端口智能选择**：输入端口可手动指定；直接回车会自动生成高位随机端口
 
 ### 🧾 审计与追踪
 - **全量日志**：`/var/log/vps-bootstrap/bootstrap-时间戳.log`
@@ -59,8 +61,10 @@
 ## 快速开始
 
 ```bash
-bash -lc 'command -v curl >/dev/null && curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash || wget -qO- https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash'
+bash -lc 'tmp=/tmp/vps-bootstrap-install.sh; (command -v curl >/dev/null && curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh -o "$tmp") || wget -qO "$tmp" https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh; bash "$tmp"'
 ```
+
+> 说明：这是交互式脚本，不建议使用 `| bash` 直接管道执行，否则可能无法读取你的输入。
 
 ---
 

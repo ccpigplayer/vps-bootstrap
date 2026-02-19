@@ -23,8 +23,14 @@ download() {
 download
 chmod +x "$TMP_SCRIPT"
 
+if [[ ! -r /dev/tty ]]; then
+  echo "[ERROR] 当前环境没有可用终端（/dev/tty），无法进行交互式初始化。" >&2
+  echo "请先下载脚本后，在可交互终端中执行：bash $TMP_SCRIPT" >&2
+  exit 1
+fi
+
 if command -v sudo >/dev/null 2>&1; then
-  sudo bash "$TMP_SCRIPT" "$@"
+  sudo bash "$TMP_SCRIPT" "$@" </dev/tty
 else
-  bash "$TMP_SCRIPT" "$@"
+  bash "$TMP_SCRIPT" "$@" </dev/tty
 fi

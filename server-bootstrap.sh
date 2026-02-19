@@ -128,16 +128,34 @@ ask_hostname(){
 
 ask_ssh_port(){
   step "配置 SSH 端口"
-  read -r -p "请输入新的 SSH 端口（1024-65535，回车默认22）: " input_port
+  local auto_port
+  if command -v shuf >/dev/null 2>&1; then
+    auto_port="$(shuf -i 20000-65535 -n 1)"
+  else
+    auto_port="$((20000 + RANDOM % 45536))"
+  fi
+
+  read -r -p "请输入新的 SSH 端口（1024-65535，回车=自动随机端口 ${auto_port}，输入22=默认端口）: " input_port
   if [[ -z "${input_port:-}" ]]; then
-    SSH_PORT="22"
+    SSH_PORT="$auto_port"
   else
     if ! [[ "$input_port" =~ ^[0-9]+$ ]] || (( input_port < 1024 || input_port > 65535 )); then
       err "端口无效，必须是 1024-65535 的数字。"; exit 1
     fi
     SSH_PORT="$input_port"
   fi
+
+  if [[ "$SSH_PORT" == "22" ]]; then
+    warn "你选择了默认 22 端口（安全性较弱，建议后续改为高位端口）。"
+  fi
   ok "SSH 端口将设置为: $SSH_PORT"
+}
+
+
+validate_pubkey(){
+  local key="$1"
+  [[ "$key" =~ ^(ssh-(ed25519|rsa|dss)|ecdsa-sha2-nistp(256|384|521))[[:space:]] ]] || return 1
+  printf '%s\n' "$key" | ssh-keygen -l -f - >/dev/null 2>&1
 }
 
 ask_key_only(){
@@ -156,8 +174,24 @@ EOF
   if [[ "$ENABLE_KEY_ONLY" == "true" ]]; then
     read -r -p "请输入要写入公钥的用户名（例如 cc）: " TARGET_USER
     [[ -n "$TARGET_USER" ]] || { err "你选择了仅秘钥登录，用户名不能为空。"; exit 1; }
-    read -r -p "粘贴该用户 SSH 公钥（ssh-ed25519/ssh-rsa...）: " PUBKEY
-    [[ -n "$PUBKEY" ]] || { err "你选择了仅秘钥登录，但未提供公钥。"; exit 1; }
+
+    while true; do
+      read -r -p "粘贴该用户 SSH 公钥（ssh-ed25519/ssh-rsa...）: " PUBKEY
+      [[ -n "$PUBKEY" ]] || { warn "公钥为空，请重新输入。"; continue; }
+      if ! validate_pubkey "$PUBKEY"; then
+        warn "公钥格式无效，无法通过 ssh-keygen 校验，请重新粘贴完整公钥。"
+        continue
+      fi
+
+      local fp
+      fp="$(printf '%s\n' "$PUBKEY" | ssh-keygen -l -f - 2>/dev/null | awk '{print $2, $4}')"
+      info "公钥校验通过，指纹: $fp"
+      read -r -p "确认使用该公钥？[y/N]: " confirm_key
+      if [[ "${confirm_key:-N}" =~ ^[Yy]$ ]]; then
+        break
+      fi
+    done
+
     ok "已启用仅秘钥登录（两阶段防锁死流程）"
   else
     warn "将保留密码登录。"
@@ -277,14 +311,14 @@ set_or_append(){
 }
 
 configure_sshd_phase1(){
-  step "SSH 第一阶段：改端口 + 禁止 root，暂不关密码"
+  step "SSH 第一阶段：改端口，保留密码兜底（防锁死）"
   local sshcfg
   sshcfg="$(get_sshd_config_path)"
   backup_file "$sshcfg"
 
   set_or_append "Port" "$SSH_PORT" "$sshcfg"
   set_or_append "PubkeyAuthentication" "yes" "$sshcfg"
-  set_or_append "PermitRootLogin" "no" "$sshcfg"
+  set_or_append "PermitRootLogin" "yes" "$sshcfg"
   set_or_append "PasswordAuthentication" "yes" "$sshcfg"
 
   sshd -t
@@ -352,6 +386,7 @@ configure_sshd_phase2_keyonly(){
   local sshcfg
   sshcfg="$(get_sshd_config_path)"
 
+  set_or_append "PermitRootLogin" "no" "$sshcfg"
   set_or_append "PasswordAuthentication" "no" "$sshcfg"
   set_or_append "ChallengeResponseAuthentication" "no" "$sshcfg"
   set_or_append "KbdInteractiveAuthentication" "no" "$sshcfg"
