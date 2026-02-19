@@ -56,16 +56,8 @@
 
 ## 快速开始
 
-### 一行调用（推荐）
-
 ```bash
-bash -lc 'curl -fsSL -o /tmp/vps-bootstrap.sh https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/server-bootstrap.sh && (command -v sudo >/dev/null 2>&1 && sudo bash /tmp/vps-bootstrap.sh || bash /tmp/vps-bootstrap.sh)'
-```
-
-### 仓库方式
-
-```bash
-git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap && (sudo bash server-bootstrap.sh || bash server-bootstrap.sh)
+curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash
 ```
 
 ---
@@ -74,6 +66,7 @@ git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap &
 
 ```text
 .
+├── install.sh
 ├── server-bootstrap.sh
 ├── bootstrap-playbook.md
 ├── CHANGELOG.md
