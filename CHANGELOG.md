@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.7
+- fix: installer now supports curl/wget fallback
+
+
 ## v1.1.6
 - feat: short curl|bash installer and single quick-start path
 
