@@ -28,19 +28,34 @@
 
 ---
 
-## 系统支持
+## 支持矩阵
 
-- Ubuntu / Debian
-- Rocky / AlmaLinux / CentOS / RHEL / Fedora（基础支持）
+| 功能 | Ubuntu / Debian | Rocky / Alma / CentOS / RHEL / Fedora |
+|---|---|---|
+| 系统更新 + 清理旧依赖 | ✅ | ✅ |
+| 安装基础工具（curl/wget/unzip/nano/vim/sudo等） | ✅ | ✅ |
+| 交互式时区选择 | ✅ | ✅ |
+| 交互式 SSH 端口修改 | ✅ | ✅ |
+| SSH 两阶段防锁死切换 | ✅ | ✅ |
+| 仅秘钥登录（可选） | ✅ | ✅ |
+| 智能验证（监听+TCP探测+等待重试） | ✅ | ✅ |
+| Fail2ban 严格策略（3次/10分钟，封禁24小时） | ✅ | ✅ |
+| Fail2ban 自动跟随 SSH 新端口 | ✅ | ✅ |
+| BBR 启用 | ✅ | ✅（内核支持时） |
+| 审计日志落盘 | ✅ | ✅ |
+| 防火墙自动配置 | ❌（按项目要求不启用） | ❌（按项目要求不启用） |
 
 ---
 
 ## 快速开始
 
+### 一行调用（推荐）
+
 ```bash
-chmod +x server-bootstrap.sh
-sudo ./server-bootstrap.sh
+git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap && sudo bash server-bootstrap.sh
 ```
+
+> 如果仓库是 private，会提示输入 GitHub 凭据（或使用已配置的 SSH Key）。
 
 ---
 
