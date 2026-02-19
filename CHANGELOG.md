@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.2
+- docs+release: support matrix and one-line run improvements
+
+
 ## v1.1.0
 - 标题去除 emoji
 - 增加系统支持：Ubuntu/Debian + RHEL 系基础支持
