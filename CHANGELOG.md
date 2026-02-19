@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.5
+- docs: refine core features layout and readability
+
+
 ## v1.1.4
 - docs: public repo update + improved one-line bootstrap command
 
