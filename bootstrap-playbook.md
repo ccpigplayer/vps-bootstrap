@@ -2,6 +2,7 @@
 
 本版本增强点：
 - 系统支持增强：Ubuntu/Debian + RHEL 系基础支持
+- 可选主机名修改（hostnamectl + /etc/hosts 同步）
 - 标题去除 emoji
 - SSH 验证流程更智能：自动探测 + 交互等待 + 安全降级
 - 审计日志落盘

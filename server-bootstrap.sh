@@ -14,6 +14,7 @@ ENABLE_KEY_ONLY="true"
 TARGET_USER=""
 PUBKEY=""
 TIMEZONE="Asia/Shanghai"
+NEW_HOSTNAME=""
 
 LOG_DIR="/var/log/vps-bootstrap"
 RUN_ID="$(date +%F-%H%M%S)"
@@ -105,6 +106,26 @@ EOF
   ok "时区设置为: $TIMEZONE"
 }
 
+ask_hostname(){
+  step "主机名（Hostname）设置"
+  local current_host
+  current_host="$(hostnamectl --static 2>/dev/null || hostname)"
+  info "当前主机名: $current_host"
+  read -r -p "请输入新主机名（留空=不修改）: " NEW_HOSTNAME
+
+  if [[ -z "${NEW_HOSTNAME:-}" ]]; then
+    info "保持当前主机名不变"
+    return 0
+  fi
+
+  if [[ ! "$NEW_HOSTNAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$ ]]; then
+    err "主机名不合法。仅支持字母/数字/中横线，长度 1-63，且不能以中横线开头。"
+    exit 1
+  fi
+
+  ok "将主机名设置为: $NEW_HOSTNAME"
+}
+
 ask_ssh_port(){
   step "配置 SSH 端口"
   read -r -p "请输入新的 SSH 端口（1024-65535，回车默认22）: " input_port
@@ -194,6 +215,24 @@ install_base_tools(){
 }
 
 set_timezone(){ step "应用时区"; timedatectl set-timezone "$TIMEZONE"; ok "时区已生效: $TIMEZONE"; }
+
+apply_hostname(){
+  [[ -n "${NEW_HOSTNAME:-}" ]] || return 0
+  step "应用主机名"
+
+  hostnamectl set-hostname "$NEW_HOSTNAME"
+
+  # 尝试同步 /etc/hosts 中 127.0.1.1 的主机名（Debian/Ubuntu 常见）
+  if [[ -f /etc/hosts ]]; then
+    if grep -qE '^127\.0\.1\.1\s+' /etc/hosts; then
+      sed -i "s/^127\.0\.1\.1\s\+.*/127.0.1.1\t$NEW_HOSTNAME/" /etc/hosts
+    else
+      echo -e "127.0.1.1\t$NEW_HOSTNAME" >> /etc/hosts
+    fi
+  fi
+
+  ok "主机名已更新为: $NEW_HOSTNAME"
+}
 
 setup_user_pubkey_if_needed(){
   [[ "$ENABLE_KEY_ONLY" == "true" ]] || return 0
@@ -361,6 +400,7 @@ Package Manager: $PKG_MGR
 SSH Service: $SSH_SERVICE
 SSH Port: $SSH_PORT
 Timezone: $TIMEZONE
+Hostname: $(hostnamectl --static 2>/dev/null || hostname)
 Key-only Login: $ENABLE_KEY_ONLY
 Fail2ban Policy: maxretry=3, findtime=10m, bantime=24h
 BBR: $(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo unknown)
@@ -389,12 +429,14 @@ main(){
   init_logging
   detect_os
   ask_timezone
+  ask_hostname
   ask_ssh_port
   ask_key_only
 
   system_update_and_cleanup
   install_base_tools
   set_timezone
+  apply_hostname
   setup_user_pubkey_if_needed
 
   configure_sshd_phase1
