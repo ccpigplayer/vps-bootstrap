@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.6
+- feat: short curl|bash installer and single quick-start path
+
+
 ## v1.1.5
 - docs: refine core features layout and readability
 
