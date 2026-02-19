@@ -52,10 +52,14 @@
 ### 一行调用（推荐）
 
 ```bash
-git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap && sudo bash server-bootstrap.sh
+bash -lc 'curl -fsSL -o /tmp/vps-bootstrap.sh https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/server-bootstrap.sh && (command -v sudo >/dev/null 2>&1 && sudo bash /tmp/vps-bootstrap.sh || bash /tmp/vps-bootstrap.sh)'
 ```
 
-> 如果仓库是 private，会提示输入 GitHub 凭据（或使用已配置的 SSH Key）。
+### 仓库方式
+
+```bash
+git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap && (sudo bash server-bootstrap.sh || bash server-bootstrap.sh)
+```
 
 ---
 
@@ -77,8 +81,9 @@ git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap &
 - 版本文件：`VERSION`
 - 发布规则说明：`RELEASE.md`
 - 本地发布脚本：`scripts/release.sh`
-- 推送 tag（如 `v1.1.2`）后会自动创建 GitHub Release
+- 推送 tag（如 `v1.1.3`）后可按需创建 GitHub Release（当前默认手动）
 
 ## 说明
 
-- 此仓库为私有项目，不附带开源许可。
+- 此仓库已切换为公开（public）。
+- 不包含密钥、令牌、私有资产清单等敏感信息。
