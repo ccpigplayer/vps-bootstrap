@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.3
+- fix: handle missing sudo package gracefully and admin group compatibility
+
+
 ## v1.1.2
 - docs+release: support matrix and one-line run improvements
 
