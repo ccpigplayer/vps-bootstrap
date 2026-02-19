@@ -173,12 +173,22 @@ install_base_tools(){
   step "安装常用软件"
   case "$PKG_MGR" in
     apt)
-      apt-get install -y curl wget unzip nano vim sudo git jq htop ca-certificates gnupg lsb-release openssh-server fail2ban
+      apt-get install -y curl wget unzip nano vim git jq htop ca-certificates gnupg lsb-release openssh-server fail2ban
       ;;
     dnf|yum)
-      $PKG_MGR install -y curl wget unzip nano vim sudo git jq htop ca-certificates openssh-server fail2ban
+      $PKG_MGR install -y curl wget unzip nano vim git jq htop ca-certificates openssh-server fail2ban
       ;;
   esac
+
+  # sudo 在某些精简镜像可能不存在/仓库异常，做容错安装
+  if ! command -v sudo >/dev/null 2>&1; then
+    warn "未检测到 sudo，尝试安装..."
+    case "$PKG_MGR" in
+      apt) apt-get install -y sudo || warn "sudo 安装失败，继续执行（当前 root 会话不受影响）" ;;
+      dnf|yum) $PKG_MGR install -y sudo || warn "sudo 安装失败，继续执行（当前 root 会话不受影响）" ;;
+    esac
+  fi
+
   systemctl enable fail2ban --now
   ok "基础软件安装完成"
 }
@@ -189,9 +199,17 @@ setup_user_pubkey_if_needed(){
   [[ "$ENABLE_KEY_ONLY" == "true" ]] || return 0
   step "配置用户与公钥"
   if ! id "$TARGET_USER" >/dev/null 2>&1; then
-    info "用户 $TARGET_USER 不存在，自动创建并加入 sudo 组"
+    info "用户 $TARGET_USER 不存在，自动创建管理员用户"
     adduser --disabled-password --gecos '' "$TARGET_USER"
-    usermod -aG sudo "$TARGET_USER"
+    if getent group sudo >/dev/null 2>&1; then
+      usermod -aG sudo "$TARGET_USER"
+      info "已加入 sudo 组"
+    elif getent group wheel >/dev/null 2>&1; then
+      usermod -aG wheel "$TARGET_USER"
+      info "已加入 wheel 组"
+    else
+      warn "未找到 sudo/wheel 组，请手动授予管理员权限"
+    fi
   fi
   install -d -m 700 "/home/$TARGET_USER/.ssh"
   echo "$PUBKEY" > "/home/$TARGET_USER/.ssh/authorized_keys"
