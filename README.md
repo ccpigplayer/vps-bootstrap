@@ -71,6 +71,14 @@ git clone https://github.com/ccpigplayer/vps-bootstrap.git && cd vps-bootstrap &
 
 ---
 
+## Release 迭代
+
+- 本项目已启用语义化版本（SemVer）
+- 版本文件：`VERSION`
+- 发布规则说明：`RELEASE.md`
+- 本地发布脚本：`scripts/release.sh`
+- 推送 tag（如 `v1.1.2`）后会自动创建 GitHub Release
+
 ## 说明
 
 - 此仓库为私有项目，不附带开源许可。
