@@ -151,7 +151,6 @@ ask_ssh_port(){
   ok "SSH 端口将设置为: $SSH_PORT"
 }
 
-
 user_home_dir(){
   local user="$1"
   getent passwd "$user" | cut -d: -f6
@@ -208,6 +207,7 @@ EOF
     warn "将保留密码登录。"
   fi
 }
+
 system_update_and_cleanup(){
   step "系统更新与清理"
   case "$PKG_MGR" in
