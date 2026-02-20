@@ -12,6 +12,7 @@ set -euo pipefail
 SSH_PORT="22"
 ENABLE_KEY_ONLY="false"
 TARGET_USER=""
+ROOT_LOGIN_POLICY="no"
 TIMEZONE="Asia/Shanghai"
 NEW_HOSTNAME=""
 
@@ -150,7 +151,6 @@ ask_ssh_port(){
   ok "SSH 端口将设置为: $SSH_PORT"
 }
 
-
 user_home_dir(){
   local user="$1"
   getent passwd "$user" | cut -d: -f6
@@ -195,11 +195,19 @@ EOF
       break
     done
 
+    if [[ "$TARGET_USER" == "root" ]]; then
+      ROOT_LOGIN_POLICY="prohibit-password"
+      warn "检测到使用 root 用户：将禁用 root 密码登录，但保留 root 公钥登录（PermitRootLogin prohibit-password）。"
+    else
+      ROOT_LOGIN_POLICY="no"
+    fi
+
     ok "将执行两阶段流程；验证通过后禁用密码登录。"
   else
     warn "将保留密码登录。"
   fi
 }
+
 system_update_and_cleanup(){
   step "系统更新与清理"
   case "$PKG_MGR" in
@@ -365,7 +373,7 @@ configure_sshd_phase2_keyonly(){
   local sshcfg
   sshcfg="$(get_sshd_config_path)"
 
-  set_or_append "PermitRootLogin" "no" "$sshcfg"
+  set_or_append "PermitRootLogin" "$ROOT_LOGIN_POLICY" "$sshcfg"
   set_or_append "PasswordAuthentication" "no" "$sshcfg"
   set_or_append "ChallengeResponseAuthentication" "no" "$sshcfg"
   set_or_append "KbdInteractiveAuthentication" "no" "$sshcfg"
@@ -416,6 +424,7 @@ SSH Port: $SSH_PORT
 Timezone: $TIMEZONE
 Hostname: $(hostnamectl --static 2>/dev/null || hostname)
 Key-only Login: $ENABLE_KEY_ONLY
+PermitRootLogin Policy: $ROOT_LOGIN_POLICY
 Fail2ban Policy: maxretry=3, findtime=10m, bantime=24h
 BBR: $(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo unknown)
 Log File: $LOG_FILE
