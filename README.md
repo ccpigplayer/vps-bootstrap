@@ -61,10 +61,10 @@
 ## 快速开始
 
 ```bash
-bash -lc 'tmp=/tmp/vps-bootstrap-install.sh; (command -v curl >/dev/null && curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh -o "$tmp") || wget -qO "$tmp" https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh; bash "$tmp"'
+curl -fsSL https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash
 ```
 
-> 说明：这是交互式脚本，不建议使用 `| bash` 直接管道执行，否则可能无法读取你的输入。
+> 安装器已做 TTY 处理并会显示下载进度条；若无 curl 可改用：`wget -qO- https://raw.githubusercontent.com/ccpigplayer/vps-bootstrap/main/install.sh | bash`
 
 ---
 
