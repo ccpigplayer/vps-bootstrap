@@ -10,9 +10,8 @@ set -euo pipefail
 # ==============================================
 
 SSH_PORT="22"
-ENABLE_KEY_ONLY="true"
+ENABLE_KEY_ONLY="false"
 TARGET_USER=""
-PUBKEY=""
 TIMEZONE="Asia/Shanghai"
 NEW_HOSTNAME=""
 
@@ -152,52 +151,55 @@ ask_ssh_port(){
 }
 
 
-validate_pubkey(){
-  local key="$1"
-  [[ "$key" =~ ^(ssh-(ed25519|rsa|dss)|ecdsa-sha2-nistp(256|384|521))[[:space:]] ]] || return 1
-  printf '%s\n' "$key" | ssh-keygen -l -f - >/dev/null 2>&1
+user_home_dir(){
+  local user="$1"
+  getent passwd "$user" | cut -d: -f6
+}
+
+user_has_authorized_key(){
+  local user="$1"
+  local home
+  home="$(user_home_dir "$user")"
+  [[ -n "$home" ]] || return 1
+  [[ -s "$home/.ssh/authorized_keys" ]]
 }
 
 ask_key_only(){
   step "登录方式策略"
   cat <<'EOF'
-  1) 仅秘钥登录（推荐，更安全）
-  2) 保留密码登录（兼容优先）
+  1) 禁用密码登录（仅允许公钥登录，更安全）
+  2) 保留密码登录（默认，兼容优先）
 EOF
-  read -r -p "输入编号 [1-2] (默认1): " key_choice
-  case "${key_choice:-1}" in
+  read -r -p "输入编号 [1-2] (默认2): " key_choice
+  case "${key_choice:-2}" in
     1) ENABLE_KEY_ONLY="true" ;;
     2) ENABLE_KEY_ONLY="false" ;;
-    *) ENABLE_KEY_ONLY="true" ;;
+    *) ENABLE_KEY_ONLY="false" ;;
   esac
 
   if [[ "$ENABLE_KEY_ONLY" == "true" ]]; then
-    read -r -p "请输入要写入公钥的用户名（例如 cc）: " TARGET_USER
-    [[ -n "$TARGET_USER" ]] || { err "你选择了仅秘钥登录，用户名不能为空。"; exit 1; }
-
     while true; do
-      read -r -p "粘贴该用户 SSH 公钥（ssh-ed25519/ssh-rsa...）: " PUBKEY
-      [[ -n "$PUBKEY" ]] || { warn "公钥为空，请重新输入。"; continue; }
-      if ! validate_pubkey "$PUBKEY"; then
-        warn "公钥格式无效，无法通过 ssh-keygen 校验，请重新粘贴完整公钥。"
+      read -r -p "请输入用于验证登录的用户名（已存在且已配置公钥）: " TARGET_USER
+      [[ -n "$TARGET_USER" ]] || { warn "用户名不能为空。"; continue; }
+
+      if ! id "$TARGET_USER" >/dev/null 2>&1; then
+        warn "用户 $TARGET_USER 不存在，请输入已存在的用户。"
         continue
       fi
 
-      local fp
-      fp="$(printf '%s\n' "$PUBKEY" | ssh-keygen -l -f - 2>/dev/null | awk '{print $2, $4}')"
-      info "公钥校验通过，指纹: $fp"
-      read -r -p "确认使用该公钥？[y/N]: " confirm_key
-      if [[ "${confirm_key:-N}" =~ ^[Yy]$ ]]; then
-        break
+      if ! user_has_authorized_key "$TARGET_USER"; then
+        warn "用户 $TARGET_USER 未检测到有效 authorized_keys，建议先确认公钥可登录后再禁用密码。"
+        continue
       fi
+
+      break
     done
 
-    ok "已启用仅秘钥登录（两阶段防锁死流程）"
+    ok "将执行两阶段流程；验证通过后禁用密码登录。"
   else
     warn "将保留密码登录。"
   fi
 }
-
 system_update_and_cleanup(){
   step "系统更新与清理"
   case "$PKG_MGR" in
@@ -266,29 +268,6 @@ apply_hostname(){
   fi
 
   ok "主机名已更新为: $NEW_HOSTNAME"
-}
-
-setup_user_pubkey_if_needed(){
-  [[ "$ENABLE_KEY_ONLY" == "true" ]] || return 0
-  step "配置用户与公钥"
-  if ! id "$TARGET_USER" >/dev/null 2>&1; then
-    info "用户 $TARGET_USER 不存在，自动创建管理员用户"
-    adduser --disabled-password --gecos '' "$TARGET_USER"
-    if getent group sudo >/dev/null 2>&1; then
-      usermod -aG sudo "$TARGET_USER"
-      info "已加入 sudo 组"
-    elif getent group wheel >/dev/null 2>&1; then
-      usermod -aG wheel "$TARGET_USER"
-      info "已加入 wheel 组"
-    else
-      warn "未找到 sudo/wheel 组，请手动授予管理员权限"
-    fi
-  fi
-  install -d -m 700 "/home/$TARGET_USER/.ssh"
-  echo "$PUBKEY" > "/home/$TARGET_USER/.ssh/authorized_keys"
-  chmod 600 "/home/$TARGET_USER/.ssh/authorized_keys"
-  chown -R "$TARGET_USER:$TARGET_USER" "/home/$TARGET_USER/.ssh"
-  ok "公钥已写入 /home/$TARGET_USER/.ssh/authorized_keys"
 }
 
 get_sshd_config_path(){
@@ -472,7 +451,6 @@ main(){
   install_base_tools
   set_timezone
   apply_hostname
-  setup_user_pubkey_if_needed
 
   configure_sshd_phase1
   verify_new_port_and_confirm
