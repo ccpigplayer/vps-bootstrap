@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.1.9
+- fix: reduce key-only lockout risk for root by using `PermitRootLogin prohibit-password`
+- feat: key-only flow now validates existing user + authorized_keys instead of forcing key overwrite
+- feat: installer UX polish with short curl|bash entry and download progress display
+
+
 ## v1.1.8
 - feat: support interactive hostname update
 
